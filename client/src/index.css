@@ -15,8 +15,13 @@
   --elevate-2: #b4635d;
   --hover-gradient: linear-gradient(135deg, #d59e9d, #f4d3d1);
 
-  --background: 0 0% 100%;
+  --background: 0 0% 98%;
   --foreground: 2 61% 44%;
+
+  --brand-gradient: linear-gradient(135deg, #b52d2a 0%, #d59e9d 100%);
+  --brand-red: #b52d2a;
+  --brand-yellow: #f8c216;
+  --brand-white: #fefdfd;
 
   --border: 2 61% 44% / 0.1;
 

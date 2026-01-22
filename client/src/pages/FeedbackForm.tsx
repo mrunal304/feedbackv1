@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Star, Coffee, Utensils, Users, Sparkles, Heart } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,7 +124,7 @@ export default function FeedbackForm() {
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring" }}
           >
-            <Coffee className="w-16 h-16 mx-auto text-primary mb-4" />
+            <Logo className="w-32 h-32 mx-auto mb-4" />
           </motion.div>
           <h1 className="text-3xl font-bold text-foreground">Bomb Rolls and Bowls</h1>
           <p className="text-muted-foreground mt-2">We value your feedback</p>

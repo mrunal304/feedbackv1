@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { Logo } from "@/components/Logo";
 import {
-  Coffee,
   Star,
   TrendingUp,
   Phone,
@@ -65,7 +65,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Feedback, Analytics } from "@shared/schema";
 import { useEffect } from "react";
 
-const CHART_COLORS = ["hsl(25 60% 35%)", "hsl(120 35% 35%)", "hsl(40 70% 55%)", "hsl(80 45% 45%)", "hsl(0 55% 55%)"];
+const CHART_COLORS = ["#b52d2a", "#f8c216", "#d59e9d", "#b4635d", "#f4d3d1"];
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
@@ -196,7 +196,7 @@ export default function AdminDashboard() {
       <header className="border-b bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Coffee className="w-8 h-8 text-primary" />
+            <Logo className="w-10 h-10" />
             <div>
               <h1 className="font-bold text-lg">Bomb Rolls and Bowls</h1>
               <p className="text-xs text-muted-foreground">Admin Dashboard</p>

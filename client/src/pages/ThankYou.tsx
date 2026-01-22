@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Coffee, CheckCircle } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import confetti from "canvas-confetti";
@@ -51,7 +52,7 @@ export default function ThankYou() {
           className="mb-6"
         >
           <div className="relative inline-block">
-            <Coffee className="w-20 h-20 text-primary" />
+            <Logo className="w-24 h-24" />
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}

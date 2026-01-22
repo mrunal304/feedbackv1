@@ -3,7 +3,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Coffee, Lock } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +62,7 @@ export default function AdminLoginPage() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <Coffee className="w-12 h-12 mx-auto text-primary mb-4" />
+          <Logo className="w-24 h-24 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-foreground">Bomb Rolls and Bowls</h1>
           <p className="text-muted-foreground">Admin Dashboard</p>
         </div>
