@@ -6,7 +6,7 @@ import { z } from "zod";
 
 // Simple admin credentials (in production, use proper auth)
 const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "admin123";
+const ADMIN_PASSWORD = "bomb123";
 
 export async function registerRoutes(
   httpServer: Server,

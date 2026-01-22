@@ -130,7 +130,7 @@ export default function AdminLoginPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Default: admin / admin123
+          Default: admin / bomb123
         </p>
       </motion.div>
     </div>

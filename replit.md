@@ -34,7 +34,7 @@ A full-stack customer feedback management system for "Bomb Rolland Bowls" cafe. 
 
 ## Default Admin Credentials
 - Username: `admin`
-- Password: `admin123`
+- Password: `bomb123`
 
 ## Environment Variables
 - `MONGODB_URI` - MongoDB connection string (required)
