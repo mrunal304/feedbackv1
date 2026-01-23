@@ -16,11 +16,12 @@ const feedbackSchema = new mongoose.Schema({
   name: { type: String, required: true },
   phoneNumber: { type: String, required: true },
   ratings: {
-    interior: { type: Number, required: true, min: 1, max: 5 },
-    food: { type: Number, required: true, min: 1, max: 5 },
-    service: { type: Number, required: true, min: 1, max: 5 },
-    staff: { type: Number, required: true, min: 1, max: 5 },
-    hygiene: { type: Number, required: true, min: 1, max: 5 },
+    qualityOfService: { type: Number, required: true, min: 1, max: 5 },
+    speedOfService: { type: Number, required: true, min: 1, max: 5 },
+    friendliness: { type: Number, required: true, min: 1, max: 5 },
+    foodTemperature: { type: Number, required: true, min: 1, max: 5 },
+    menuExplanation: { type: Number, required: true, min: 1, max: 5 },
+    likelyToReturn: { type: Number, required: true, min: 1, max: 5 },
   },
   note: { type: String, maxlength: 500 },
   dateKey: { type: String, required: true }, // YYYY-MM-DD
