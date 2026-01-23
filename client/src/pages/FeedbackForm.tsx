@@ -330,7 +330,7 @@ export default function FeedbackForm() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground focus-visible:text-primary-foreground active:text-primary-foreground disabled:text-primary-foreground/50"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus-visible:bg-primary focus-visible:text-primary-foreground active:bg-primary active:text-primary-foreground disabled:bg-primary/50 disabled:text-primary-foreground/50 transition-none"
                   size="lg"
                   disabled={submitMutation.isPending}
                   data-testid="button-submit"
