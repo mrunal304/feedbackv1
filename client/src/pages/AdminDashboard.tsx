@@ -564,7 +564,7 @@ export default function AdminDashboard() {
       </Dialog>
 
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
@@ -576,7 +576,7 @@ export default function AdminDashboard() {
           </DialogHeader>
 
           {detailFeedback && (
-            <ScrollArea className="flex-1 pr-4">
+            <div className="pr-2">
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 rounded-lg bg-muted">
@@ -744,7 +744,7 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </div>
-            </ScrollArea>
+            </div>
           )}
 
           <DialogFooter>
