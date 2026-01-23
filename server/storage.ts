@@ -94,7 +94,14 @@ export class MongoStorage implements IStorage {
     if (filters?.minRating) {
       const minRating = Number(filters.minRating);
       results = results.filter(f => {
-        const avg = (f.ratings.interior + f.ratings.food + f.ratings.service + f.ratings.staff + f.ratings.hygiene) / 5;
+        const avg = (
+          f.ratings.qualityOfService + 
+          f.ratings.speedOfService + 
+          f.ratings.friendliness + 
+          f.ratings.foodTemperature + 
+          f.ratings.menuExplanation + 
+          f.ratings.likelyToReturn
+        ) / 6;
         return avg >= minRating;
       });
     }
@@ -152,21 +159,33 @@ export class MongoStorage implements IStorage {
     // Calculate average rating
     let totalRating = 0;
     const categoryTotals: Record<string, number> = {
-      interior: 0, food: 0, service: 0, staff: 0, hygiene: 0
+      qualityOfService: 0,
+      speedOfService: 0,
+      friendliness: 0,
+      foodTemperature: 0,
+      menuExplanation: 0,
+      likelyToReturn: 0,
     };
     
     feedbacks.forEach(f => {
-      const categories = ['interior', 'food', 'service', 'staff', 'hygiene'] as const;
-      categories.forEach(cat => {
+      const ratingCategories = [
+        'qualityOfService', 
+        'speedOfService', 
+        'friendliness', 
+        'foodTemperature', 
+        'menuExplanation', 
+        'likelyToReturn'
+      ] as const;
+      ratingCategories.forEach(cat => {
         categoryTotals[cat] += f.ratings[cat];
         totalRating += f.ratings[cat];
       });
     });
     
-    const avgRating = total > 0 ? totalRating / (total * 5) : 0;
+    const avgRating = total > 0 ? totalRating / (total * 6) : 0;
     
     // Find top category
-    let topCategory = 'food';
+    let topCategory = 'qualityOfService';
     let topAvg = 0;
     Object.entries(categoryTotals).forEach(([cat, sum]) => {
       const avg = total > 0 ? sum / total : 0;
@@ -178,32 +197,50 @@ export class MongoStorage implements IStorage {
     
     // Category performance
     const categoryPerformance = Object.entries(categoryTotals).map(([category, sum]) => ({
-      category: category.charAt(0).toUpperCase() + category.slice(1),
+      category: category.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
       average: total > 0 ? Math.round((sum / total) * 10) / 10 : 0,
     }));
     
     // Weekly trends (group by date)
-    const trendMap: Record<string, { count: number; interior: number; food: number; service: number; staff: number; hygiene: number }> = {};
+    const trendMap: Record<string, { 
+      count: number; 
+      qualityOfService: number;
+      speedOfService: number;
+      friendliness: number;
+      foodTemperature: number;
+      menuExplanation: number;
+      likelyToReturn: number;
+    }> = {};
     
     feedbacks.forEach(f => {
       if (!trendMap[f.dateKey]) {
-        trendMap[f.dateKey] = { count: 0, interior: 0, food: 0, service: 0, staff: 0, hygiene: 0 };
+        trendMap[f.dateKey] = { 
+          count: 0, 
+          qualityOfService: 0,
+          speedOfService: 0,
+          friendliness: 0,
+          foodTemperature: 0,
+          menuExplanation: 0,
+          likelyToReturn: 0
+        };
       }
       trendMap[f.dateKey].count++;
-      trendMap[f.dateKey].interior += f.ratings.interior;
-      trendMap[f.dateKey].food += f.ratings.food;
-      trendMap[f.dateKey].service += f.ratings.service;
-      trendMap[f.dateKey].staff += f.ratings.staff;
-      trendMap[f.dateKey].hygiene += f.ratings.hygiene;
+      trendMap[f.dateKey].qualityOfService += f.ratings.qualityOfService;
+      trendMap[f.dateKey].speedOfService += f.ratings.speedOfService;
+      trendMap[f.dateKey].friendliness += f.ratings.friendliness;
+      trendMap[f.dateKey].foodTemperature += f.ratings.foodTemperature;
+      trendMap[f.dateKey].menuExplanation += f.ratings.menuExplanation;
+      trendMap[f.dateKey].likelyToReturn += f.ratings.likelyToReturn;
     });
     
     const weeklyTrends = Object.entries(trendMap).map(([date, data]) => ({
       date,
-      interior: Math.round((data.interior / data.count) * 10) / 10,
-      food: Math.round((data.food / data.count) * 10) / 10,
-      service: Math.round((data.service / data.count) * 10) / 10,
-      staff: Math.round((data.staff / data.count) * 10) / 10,
-      hygiene: Math.round((data.hygiene / data.count) * 10) / 10,
+      qualityOfService: Math.round((data.qualityOfService / data.count) * 10) / 10,
+      speedOfService: Math.round((data.speedOfService / data.count) * 10) / 10,
+      friendliness: Math.round((data.friendliness / data.count) * 10) / 10,
+      foodTemperature: Math.round((data.foodTemperature / data.count) * 10) / 10,
+      menuExplanation: Math.round((data.menuExplanation / data.count) * 10) / 10,
+      likelyToReturn: Math.round((data.likelyToReturn / data.count) * 10) / 10,
     }));
     
     return {
