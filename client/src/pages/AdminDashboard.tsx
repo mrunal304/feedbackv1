@@ -16,6 +16,10 @@ import {
   MessageSquare,
   BarChart3,
   ChevronDown,
+  Eye,
+  AlertTriangle,
+  History,
+  User,
 } from "lucide-react";
 import {
   LineChart,
@@ -62,8 +66,10 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Feedback, Analytics } from "@shared/schema";
+import type { Feedback, Analytics, CustomerHistory } from "@shared/schema";
 import { useEffect } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 const CHART_COLORS = ["#b52d2a", "#f8c216", "#d59e9d", "#b4635d", "#f4d3d1"];
 
@@ -107,6 +113,8 @@ export default function AdminDashboard() {
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
   const [staffName, setStaffName] = useState("");
   const [copied, setCopied] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [detailFeedback, setDetailFeedback] = useState<Feedback | null>(null);
 
   const { data: authCheck, isLoading: authLoading } = useQuery({
     queryKey: ["/api/auth/check"],
@@ -129,6 +137,20 @@ export default function AdminDashboard() {
   const { data: analytics } = useQuery<Analytics>({
     queryKey: [analyticsUrl],
     enabled: !!(authCheck as any)?.authenticated,
+  });
+
+  const { data: customerHistory, isLoading: historyLoading } = useQuery<CustomerHistory>({
+    queryKey: ['/api/feedback/customer-history', detailFeedback?.normalizedName],
+    queryFn: async () => {
+      if (!detailFeedback?.normalizedName) return null;
+      const res = await fetch(`/api/feedback/customer-history/${encodeURIComponent(detailFeedback.normalizedName)}`);
+      if (!res.ok) {
+        if (res.status === 404) return null;
+        throw new Error('Failed to fetch customer history');
+      }
+      return res.json();
+    },
+    enabled: !!(authCheck as any)?.authenticated && !!detailFeedback?.normalizedName && detailDialogOpen,
   });
 
   const logoutMutation = useMutation({
@@ -175,6 +197,22 @@ export default function AdminDashboard() {
     setSelectedFeedback(fb);
     setContactDialogOpen(true);
   };
+
+  const handleViewDetails = (fb: Feedback) => {
+    setDetailFeedback(fb);
+    setDetailDialogOpen(true);
+  };
+
+  const RATING_CATEGORIES = [
+    { key: 'qualityOfService', label: 'Quality of Service' },
+    { key: 'speedOfService', label: 'Speed of Service' },
+    { key: 'friendliness', label: 'Friendliness' },
+    { key: 'foodTemperature', label: 'Food Temperature' },
+    { key: 'menuExplanation', label: 'Menu Explanation' },
+    { key: 'likelyToReturn', label: 'Likely to Return' },
+  ] as const;
+
+  const isLowRating = (rating: number) => rating <= 2;
 
   const getAverageRating = (ratings: Feedback["ratings"]) => {
     const sum = 
@@ -443,6 +481,15 @@ export default function AdminDashboard() {
                               <div className="flex items-center gap-2">
                                 <Button
                                   size="sm"
+                                  variant="outline"
+                                  onClick={() => handleViewDetails(fb)}
+                                  data-testid={`button-view-details-${fb._id}`}
+                                >
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  View Details
+                                </Button>
+                                <Button
+                                  size="sm"
                                   variant="ghost"
                                   onClick={() => handleCopyPhone(fb.phoneNumber)}
                                   data-testid={`button-copy-${fb._id}`}
@@ -512,6 +559,210 @@ export default function AdminDashboard() {
             >
               {contactMutation.isPending ? "Saving..." : "Copy & Mark Contacted"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Feedback Details
+            </DialogTitle>
+            <DialogDescription>
+              Detailed view of customer feedback and rating breakdown
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailFeedback && (
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-sm text-muted-foreground">Customer Name</p>
+                    <p className="font-medium" data-testid="text-detail-name">{detailFeedback.name}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-sm text-muted-foreground">Phone Number</p>
+                    <p className="font-mono" data-testid="text-detail-phone">{detailFeedback.phoneNumber}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-sm text-muted-foreground">Visit Date</p>
+                    <p className="font-medium" data-testid="text-detail-visit-date">{detailFeedback.visitDate}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-sm text-muted-foreground">Review Date</p>
+                    <p className="font-medium" data-testid="text-detail-review-date">
+                      {new Date(detailFeedback.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p className="font-medium" data-testid="text-detail-location">{detailFeedback.location}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <p className="text-sm text-muted-foreground">Dining Option</p>
+                    <p className="font-medium capitalize" data-testid="text-detail-dining">{detailFeedback.diningOption}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-400" />
+                    Overall Rating
+                  </h4>
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted">
+                    <span className="text-3xl font-bold" data-testid="text-detail-overall-rating">
+                      {getAverageRating(detailFeedback.ratings)}
+                    </span>
+                    <StarDisplay rating={Math.round(Number(getAverageRating(detailFeedback.ratings)))} />
+                    <span className="text-muted-foreground">/ 5</span>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-semibold mb-3">Category Ratings</h4>
+                  <div className="space-y-2">
+                    {RATING_CATEGORIES.map(({ key, label }) => {
+                      const rating = detailFeedback.ratings[key];
+                      const low = isLowRating(rating);
+                      return (
+                        <div
+                          key={key}
+                          className={`flex items-center justify-between p-3 rounded-lg ${
+                            low ? 'bg-destructive/10 border border-destructive/30' : 'bg-muted'
+                          }`}
+                          data-testid={`rating-category-${key}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {low && <AlertTriangle className="w-4 h-4 text-destructive" />}
+                            <span className={low ? 'text-destructive font-medium' : ''}>{label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <StarDisplay rating={rating} />
+                            <span className={`font-bold ${low ? 'text-destructive' : ''}`}>
+                              {rating}/5
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {detailFeedback.note && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        Customer Comment
+                      </h4>
+                      <div className="p-4 rounded-lg bg-muted">
+                        <p className="text-sm whitespace-pre-wrap" data-testid="text-detail-note">
+                          {detailFeedback.note}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <History className="w-4 h-4" />
+                    Customer History
+                    {customerHistory && customerHistory.totalVisits > 1 && (
+                      <Badge variant="secondary" className="ml-2">
+                        Repeat Customer
+                      </Badge>
+                    )}
+                  </h4>
+
+                  {historyLoading ? (
+                    <div className="p-4 rounded-lg bg-muted text-center text-muted-foreground">
+                      Loading customer history...
+                    </div>
+                  ) : customerHistory ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4 p-3 rounded-lg bg-muted">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Visits</p>
+                          <p className="text-2xl font-bold" data-testid="text-total-visits">
+                            {customerHistory.totalVisits}
+                          </p>
+                        </div>
+                      </div>
+
+                      {customerHistory.totalVisits > 1 && (
+                        <div className="space-y-3">
+                          <p className="text-sm text-muted-foreground">Previous Reviews (Latest First)</p>
+                          {customerHistory.feedbackHistory
+                            .filter(fb => fb._id !== detailFeedback._id)
+                            .map((fb, index) => (
+                              <Card key={fb._id} className="p-4" data-testid={`history-item-${index}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(fb.createdAt).toLocaleDateString()}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold">{getAverageRating(fb.ratings)}</span>
+                                    <StarDisplay rating={Math.round(Number(getAverageRating(fb.ratings)))} />
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                                  {RATING_CATEGORIES.slice(0, 3).map(({ key, label }) => (
+                                    <div key={key} className="flex items-center gap-1">
+                                      <span className="text-muted-foreground">{label.split(' ')[0]}:</span>
+                                      <span className={isLowRating(fb.ratings[key]) ? 'text-destructive font-medium' : ''}>
+                                        {fb.ratings[key]}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {fb.note && (
+                                  <p className="text-sm text-muted-foreground line-clamp-2">
+                                    "{fb.note}"
+                                  </p>
+                                )}
+                              </Card>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-lg bg-muted text-center text-muted-foreground">
+                      No previous feedback history available
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ScrollArea>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
+              Close
+            </Button>
+            {detailFeedback && !detailFeedback.contactedAt && (
+              <Button
+                onClick={() => {
+                  setDetailDialogOpen(false);
+                  handleContactCustomer(detailFeedback);
+                }}
+                data-testid="button-contact-from-detail"
+              >
+                <Phone className="w-4 h-4 mr-1" />
+                Contact Customer
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
