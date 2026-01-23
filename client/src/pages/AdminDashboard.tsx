@@ -496,6 +496,17 @@ export default function AdminDashboard() {
                                 >
                                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+                                  asChild
+                                  data-testid={`button-contact-tel-${fb._id}`}
+                                >
+                                  <a href={`tel:${fb.phoneNumber.replace(/\s+/g, '')}`}>
+                                    <Phone className="w-4 h-4 mr-2" />
+                                    Contact
+                                  </a>
+                                </Button>
                                 {!fb.contactedAt && (
                                   <Button
                                     size="sm"
