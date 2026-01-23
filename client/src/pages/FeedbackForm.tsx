@@ -17,11 +17,12 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertFeedbackSchema, type InsertFeedback } from "@shared/schema";
 
 const categories = [
-  { key: "interior", label: "Interior", icon: Sparkles },
-  { key: "food", label: "Food", icon: Utensils },
-  { key: "service", label: "Service", icon: Coffee },
-  { key: "staff", label: "Staff", icon: Users },
-  { key: "hygiene", label: "Hygiene", icon: Heart },
+  { key: "qualityOfService", label: "How would you rate the quality of service?", icon: Coffee },
+  { key: "speedOfService", label: "How satisfied were you with the speed of service?", icon: Sparkles },
+  { key: "friendliness", label: "How would you rate the friendliness of our service?", icon: Users },
+  { key: "foodTemperature", label: "How would you rate the temperature of the food on arrival?", icon: Utensils },
+  { key: "menuExplanation", label: "How well were the menu and specials explained to you?", icon: Heart },
+  { key: "likelyToReturn", label: "How likely are you to return based on the service?", icon: Coffee },
 ] as const;
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -62,11 +63,12 @@ export default function FeedbackForm() {
       name: "",
       phoneNumber: "",
       ratings: {
-        interior: 0,
-        food: 0,
-        service: 0,
-        staff: 0,
-        hygiene: 0,
+        qualityOfService: 0,
+        speedOfService: 0,
+        friendliness: 0,
+        foodTemperature: 0,
+        menuExplanation: 0,
+        likelyToReturn: 0,
       },
       note: "",
     },

@@ -177,8 +177,14 @@ export default function AdminDashboard() {
   };
 
   const getAverageRating = (ratings: Feedback["ratings"]) => {
-    const sum = ratings.interior + ratings.food + ratings.service + ratings.staff + ratings.hygiene;
-    return (sum / 5).toFixed(1);
+    const sum = 
+      ratings.qualityOfService + 
+      ratings.speedOfService + 
+      ratings.friendliness + 
+      ratings.foodTemperature + 
+      ratings.menuExplanation + 
+      ratings.likelyToReturn;
+    return (sum / 6).toFixed(1);
   };
 
   const filteredFeedback = feedback.filter((fb) => {
@@ -284,11 +290,12 @@ export default function AdminDashboard() {
                         <YAxis domain={[0, 5]} className="text-xs" />
                         <Tooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="interior" stroke={CHART_COLORS[0]} strokeWidth={2} />
-                        <Line type="monotone" dataKey="food" stroke={CHART_COLORS[1]} strokeWidth={2} />
-                        <Line type="monotone" dataKey="service" stroke={CHART_COLORS[2]} strokeWidth={2} />
-                        <Line type="monotone" dataKey="staff" stroke={CHART_COLORS[3]} strokeWidth={2} />
-                        <Line type="monotone" dataKey="hygiene" stroke={CHART_COLORS[4]} strokeWidth={2} />
+                        <Line type="monotone" dataKey="qualityOfService" stroke={CHART_COLORS[0]} strokeWidth={2} />
+                        <Line type="monotone" dataKey="speedOfService" stroke={CHART_COLORS[1]} strokeWidth={2} />
+                        <Line type="monotone" dataKey="friendliness" stroke={CHART_COLORS[2]} strokeWidth={2} />
+                        <Line type="monotone" dataKey="foodTemperature" stroke={CHART_COLORS[3]} strokeWidth={2} />
+                        <Line type="monotone" dataKey="menuExplanation" stroke={CHART_COLORS[4]} strokeWidth={2} />
+                        <Line type="monotone" dataKey="likelyToReturn" stroke="#f8c216" strokeWidth={2} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
