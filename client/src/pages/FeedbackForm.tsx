@@ -19,9 +19,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { insertFeedbackSchema, type InsertFeedback } from "@shared/schema";
 
 const locations = [
-  "Main Street",
-  "Downtown Mall",
-  "Eastside Plaza",
+  "Bomb Rolls and Bowls",
+  "Shree Rath",
+  "Icecream Parlour",
 ];
 
 const categories = [
