@@ -119,7 +119,9 @@ export default function AdminLoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full bg-[#b52d2a] text-white no-default-hover-elevate no-default-active-elevate"
+                  size="lg"
+                  style={{ opacity: 1 }}
                   disabled={loginMutation.isPending}
                   data-testid="button-login"
                 >
