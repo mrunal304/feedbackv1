@@ -9,6 +9,10 @@ A full-stack customer feedback management system for "Bomb Rolls and Bowls" cafe
 - **Thank You Page**: Confetti animation and cafe branding after submission
 - **Admin Dashboard**: Analytics, charts, and feedback management
 - **Real-time Updates**: Auto-refreshes feedback list every 15 seconds
+- **Detailed Feedback View**: View Details button opens modal with full feedback breakdown
+- **Category Rating Highlights**: Low ratings (1-2 stars) are highlighted in red for quick issue identification
+- **Repeat Customer Tracking**: View all past feedback from the same customer with normalized name matching
+- **Customer Name Normalization**: Case-insensitive customer matching (Rahul, RAHUL, rahul treated as same customer)
 
 ## Tech Stack
 - **Frontend**: React + Vite + TailwindCSS + Shadcn UI + Framer Motion + Recharts
@@ -27,6 +31,7 @@ A full-stack customer feedback management system for "Bomb Rolls and Bowls" cafe
 - `GET /api/feedback` - List all feedback (admin only)
 - `GET /api/feedback/:id` - Get single feedback
 - `PATCH /api/feedback/:id/contact` - Mark feedback as contacted
+- `GET /api/feedback/customer-history/:normalizedName` - Get customer's feedback history
 - `GET /api/analytics` - Get analytics data (week/lastWeek/month)
 - `POST /api/auth/login` - Admin login
 - `POST /api/auth/logout` - Admin logout
