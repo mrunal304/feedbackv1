@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { adminLoginSchema, type AdminLogin } from "@shared/schema";
 import { useEffect } from "react";
 
@@ -42,6 +42,8 @@ export default function AdminLoginPage() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate auth check to ensure dashboard gets fresh state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/check"] });
       navigate("/admin");
     },
     onError: () => {
@@ -131,10 +133,6 @@ export default function AdminLoginPage() {
             </Form>
           </CardContent>
         </Card>
-
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Default: admin / bomb123
-        </p>
       </motion.div>
     </div>
   );
