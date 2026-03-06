@@ -5,13 +5,14 @@ import {
   Star,
   TrendingUp,
   Phone,
-  Calendar,
+  Calendar as CalendarIcon,
   MessageSquare,
   BarChart3,
   ChevronDown,
   Eye,
   LogOut,
   Search,
+  X,
 } from "lucide-react";
 import {
   LineChart,
@@ -40,8 +41,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { format } from "date-fns";
 import type { Feedback, Analytics } from "@shared/schema";
 
 const CHART_COLORS = ["#8B1A1A", "#f5a623", "#22a34a", "#b4635d", "#f4d3d1"];
@@ -52,6 +67,9 @@ export default function AdminDashboard() {
   const [period] = useState<"week" | "lastWeek" | "month">("week");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter] = useState<"all" | "contacted" | "pending">("all");
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const { data: authCheck, isLoading: authLoading } = useQuery({
     queryKey: ["/api/auth/check"],
@@ -63,7 +81,7 @@ export default function AdminDashboard() {
     }
   }, [authCheck, authLoading, navigate]);
 
-  const feedbackUrl = `/api/feedback?search=${encodeURIComponent(searchQuery)}&status=${statusFilter}`;
+  const feedbackUrl = `/api/feedback?startDate=${selectedDate}&endDate=${selectedDate}&status=${statusFilter}`;
   const { data: feedback = [], refetch: refetchFeedback } = useQuery<Feedback[]>({
     queryKey: [feedbackUrl],
     enabled: !!(authCheck as any)?.authenticated,
@@ -96,6 +114,9 @@ export default function AdminDashboard() {
         description: "The customer has been marked as contacted",
       });
       refetchFeedback();
+      if (selectedFeedback) {
+        setSelectedFeedback({ ...selectedFeedback, contactedAt: new Date().toISOString() });
+      }
     },
   });
 
@@ -119,6 +140,20 @@ export default function AdminDashboard() {
     const query = searchQuery.toLowerCase();
     return fb.name.toLowerCase().includes(query) || fb.phoneNumber.includes(query);
   });
+
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date.toISOString().split('T')[0]);
+  };
+
+  const setToday = () => {
+    setSelectedDate(new Date().toISOString().split('T')[0]);
+  };
+
+  const setYesterday = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    setSelectedDate(yesterday.toISOString().split('T')[0]);
+  };
 
   if (authLoading || !(authCheck as any)?.authenticated) {
     return null;
@@ -323,18 +358,44 @@ export default function AdminDashboard() {
               <div className="bg-white p-4 rounded-xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <span className="text-[10px] font-bold text-gray-400 tracking-tighter uppercase">FILTER BY DATE:</span>
-                  <div className="flex items-center gap-2 px-3 py-1.5 border rounded-md text-sm text-gray-600 bg-gray-50/50">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex items-center gap-2 px-3 py-1.5 border rounded-md text-sm text-gray-600 bg-gray-50/50">
+                        <CalendarIcon className="w-4 h-4 text-gray-400" />
+                        {format(new Date(selectedDate), 'MMM d, yyyy')}
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={new Date(selectedDate)}
+                        onSelect={(date) => date && handleDateChange(date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <div className="flex gap-2">
-                    <Button size="sm" className="bg-[#8B1A1A] text-white hover:bg-[#8B1A1A]/90 px-4">Today</Button>
-                    <Button size="sm" variant="outline" className="border-[#8B1A1A] text-[#8B1A1A] hover:bg-[#8B1A1A]/5 px-4">Yesterday</Button>
+                    <Button 
+                      size="sm" 
+                      onClick={setToday}
+                      className={selectedDate === new Date().toISOString().split('T')[0] ? "bg-[#8B1A1A] text-white hover:bg-[#8B1A1A]/90 px-4" : "border-[#8B1A1A] text-[#8B1A1A] hover:bg-[#8B1A1A]/5 px-4"}
+                      variant={selectedDate === new Date().toISOString().split('T')[0] ? "default" : "outline"}
+                    >
+                      Today
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={setYesterday}
+                      className={selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] ? "bg-[#8B1A1A] text-white hover:bg-[#8B1A1A]/90 px-4" : "border-[#8B1A1A] text-[#8B1A1A] hover:bg-[#8B1A1A]/5 px-4"}
+                      variant={selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] ? "default" : "outline"}
+                    >
+                      Yesterday
+                    </Button>
                   </div>
                 </div>
                 <div className="text-[#8B1A1A] font-bold text-sm">
-                  Showing feedback for: <span className="ml-1">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                  Showing feedback for: <span className="ml-1">{format(new Date(selectedDate), 'MMMM d, yyyy')}</span>
                 </div>
               </div>
 
@@ -406,9 +467,9 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell className="py-4">
                             {fb.contactedAt ? (
-                              <span className="text-xs font-bold text-green-600 uppercase tracking-tighter">Contacted</span>
+                              <span className="text-xs font-bold text-green-600 uppercase tracking-tighter">CONTACTED</span>
                             ) : (
-                              <span className="text-xs font-bold text-[#8B1A1A] uppercase tracking-tighter">Pending</span>
+                              <span className="text-xs font-bold text-[#8B1A1A] uppercase tracking-tighter">PENDING</span>
                             )}
                           </TableCell>
                           <TableCell className="py-4">
@@ -417,7 +478,10 @@ export default function AdminDashboard() {
                                 size="sm"
                                 variant="outline"
                                 className="h-8 border-[#8B1A1A] text-[#8B1A1A] hover:bg-[#8B1A1A]/5 px-3"
-                                onClick={() => {}}
+                                onClick={() => {
+                                  setSelectedFeedback(fb);
+                                  setIsDetailsOpen(true);
+                                }}
                                 data-testid={`button-view-details-${fb._id}`}
                               >
                                 <Eye className="w-3.5 h-3.5 mr-1.5" />
@@ -442,6 +506,122 @@ export default function AdminDashboard() {
                   </TableBody>
                 </Table>
               </Card>
+
+              {/* Feedback Details Modal */}
+              <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+                <DialogContent className="max-w-2xl bg-[#FDF8F6] border-none overflow-hidden p-0 rounded-2xl">
+                  {selectedFeedback && (
+                    <>
+                      <div className="bg-[#8B1A1A] p-6 text-white relative">
+                        <DialogHeader>
+                          <DialogTitle className="text-2xl font-bold flex items-center justify-between">
+                            Feedback Details
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-white/70 hover:text-white hover:bg-white/10 h-8 w-8 rounded-full"
+                              onClick={() => setIsDetailsOpen(false)}
+                            >
+                              <X className="h-5 w-5" />
+                            </Button>
+                          </DialogTitle>
+                          <DialogDescription className="text-white/70">
+                            Submitted on {format(new Date(selectedFeedback.createdAt), 'MMMM d, yyyy h:mm a')}
+                          </DialogDescription>
+                        </DialogHeader>
+                      </div>
+
+                      <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                        <div className="grid grid-cols-2 gap-8">
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">CUSTOMER NAME</label>
+                              <p className="text-lg font-bold text-[#3D2B1F]">{selectedFeedback.name}</p>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">PHONE NUMBER</label>
+                              <p className="text-lg font-bold text-[#3D2B1F]">{selectedFeedback.phoneNumber}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">LOCATION & OPTION</label>
+                              <p className="text-[#3D2B1F]"><span className="font-bold">{selectedFeedback.location}</span> • <span className="capitalize">{(selectedFeedback.diningOption || "").replace('-', ' ')}</span></p>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">VISIT TIME</label>
+                              <p className="text-[#3D2B1F]">{selectedFeedback.visitDate} at {selectedFeedback.visitTime}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">DETAILED RATINGS</label>
+                          <div className="grid grid-cols-2 gap-4">
+                            {Object.entries(selectedFeedback.ratings).map(([key, value]) => (
+                              <div key={key} className="bg-white p-3 rounded-xl shadow-sm flex items-center justify-between">
+                                <span className="text-xs font-medium text-gray-600 capitalize">
+                                  {key.replace(/([A-Z])/g, ' $1').trim()}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className={`text-sm font-bold ${value <= 2 ? 'text-red-500' : 'text-[#3D2B1F]'}`}>{value}</span>
+                                  <Star className={`w-3 h-3 ${value <= 2 ? 'fill-red-500 text-red-500' : 'fill-amber-400 text-amber-400'}`} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="bg-white p-4 rounded-xl shadow-sm flex items-center justify-between border-2 border-[#8B1A1A]/10">
+                            <span className="font-bold text-[#3D2B1F]">OVERALL AVERAGE RATING</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl font-bold text-[#8B1A1A]">{getAverageRating(selectedFeedback.ratings)}</span>
+                              <div className="flex gap-0.5">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`w-4 h-4 ${
+                                      star <= Math.round(Number(getAverageRating(selectedFeedback.ratings))) ? "fill-amber-400 text-amber-400" : "text-gray-200"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {selectedFeedback.note && (
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">CUSTOMER NOTE</label>
+                            <div className="bg-white p-4 rounded-xl shadow-sm italic text-gray-600 border-l-4 border-[#F5A623]">
+                              "{selectedFeedback.note}"
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="pt-4 flex items-center justify-between border-t border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${selectedFeedback.contactedAt ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {selectedFeedback.contactedAt ? 'CONTACTED' : 'PENDING'}
+                            </div>
+                            {selectedFeedback.contactedAt && (
+                              <span className="text-xs text-gray-400 italic">
+                                by {selectedFeedback.contactedBy || 'Admin'} on {format(new Date(selectedFeedback.contactedAt), 'MMM d, yyyy')}
+                              </span>
+                            )}
+                          </div>
+                          {!selectedFeedback.contactedAt && (
+                            <Button 
+                              onClick={() => handleContactCustomer(selectedFeedback)}
+                              className="bg-[#8B1A1A] text-white hover:bg-[#8B1A1A]/90"
+                            >
+                              Mark as Contacted
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </DialogContent>
+              </Dialog>
             </TabsContent>
           </div>
         </main>
