@@ -18,12 +18,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { insertFeedbackSchema, type InsertFeedback } from "@shared/schema";
 
-const locations = [
-  "Bomb Rolls and Bowls",
-  "Shree Rath",
-  "Icecream Parlour",
-];
-
 const categories = [
   { key: "qualityOfService", label: "How would you rate the quality of service?", icon: Coffee },
   { key: "speedOfService", label: "How satisfied were you with the speed of service?", icon: Sparkles },
@@ -70,7 +64,7 @@ export default function FeedbackForm() {
     defaultValues: {
       name: "",
       phoneNumber: "",
-      location: "",
+      location: "Bomb Rolls and Bowls",
       diningOption: "dine-in",
       visitDate: new Date().toISOString().split('T')[0],
       visitTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
@@ -206,18 +200,14 @@ export default function FeedbackForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Location You Visited:</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Please Select" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {locations.map((loc) => (
-                              <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            readOnly
+                            className="bg-muted cursor-not-allowed"
+                            data-testid="input-location"
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
