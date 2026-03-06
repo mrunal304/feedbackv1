@@ -47,3 +47,8 @@ A full-stack customer feedback management system for "Bomb Rolls and Bowls" cafe
 
 ## Color Theme
 Premium cafe aesthetic with soft browns (#8B4513), creams (#F5F5DC), and greens (#228B22)
+
+## Build Configuration
+- Uses **Tailwind CSS v4** via `@tailwindcss/vite` Vite plugin (not PostCSS)
+- `postcss.config.js` only includes `autoprefixer` (Tailwind is handled by Vite)
+- CSS uses v4 syntax: `@import "tailwindcss"`, `@theme`, `@plugin` directives
