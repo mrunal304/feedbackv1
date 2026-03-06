@@ -424,9 +424,19 @@ export default function AdminDashboard() {
                       filteredFeedback.map((fb) => (
                         <TableRow key={fb._id} className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors">
                           <TableCell className="py-4">
-                            <div>
-                              <p className="font-bold text-[#3D2B1F]">{fb.name}</p>
-                              <p className="text-xs text-gray-500">{fb.phoneNumber}</p>
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <p className="font-bold text-[#3D2B1F]">{fb.name}</p>
+                                <p className="text-xs text-gray-500">{fb.phoneNumber}</p>
+                              </div>
+                              <a
+                                href={`tel:${fb.phoneNumber}`}
+                                className="w-8 h-8 rounded-full bg-[#fdf0f0] flex items-center justify-center text-[#8B1A1A] hover:bg-[#8B1A1A] hover:text-white transition-colors shadow-sm"
+                                title={`Call ${fb.name}`}
+                                data-testid={`button-call-${fb._id}`}
+                              >
+                                <Phone className="w-4 h-4" />
+                              </a>
                             </div>
                           </TableCell>
                           <TableCell className="py-4">
