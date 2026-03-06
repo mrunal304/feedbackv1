@@ -371,7 +371,7 @@ export default function AdminDashboard() {
                           <TableCell className="py-4">
                             <div className="text-xs text-gray-600 space-y-0.5">
                               <p className="font-medium text-[#3D2B1F]">{fb.location}</p>
-                              <p className="capitalize">{fb.diningOption.replace('-', ' ')}</p>
+                              <p className="capitalize">{(fb.diningOption || "").replace('-', ' ')}</p>
                             </div>
                           </TableCell>
                           <TableCell className="py-4">
