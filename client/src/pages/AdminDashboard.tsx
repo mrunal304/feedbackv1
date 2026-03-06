@@ -1,25 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
-import { Logo } from "@/components/Logo";
 import {
   Star,
   TrendingUp,
   Phone,
   Calendar,
-  Users,
-  Search,
-  LogOut,
-  Copy,
-  Check,
   MessageSquare,
   BarChart3,
   ChevronDown,
   Eye,
-  AlertTriangle,
-  History,
-  User,
+  LogOut,
+  Search,
 } from "lucide-react";
 import {
   LineChart,
@@ -36,26 +28,10 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -65,56 +41,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Feedback, Analytics, CustomerHistory } from "@shared/schema";
-import { useEffect } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { apiRequest } from "@/lib/queryClient";
+import type { Feedback, Analytics } from "@shared/schema";
 
-const CHART_COLORS = ["#b52d2a", "#f8c216", "#d59e9d", "#b4635d", "#f4d3d1"];
-
-function StarDisplay({ rating }: { rating: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={`w-4 h-4 ${
-            star <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function KPICard({ title, value, icon: Icon, description }: { title: string; value: string | number; icon: any; description?: string }) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className="w-4 h-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
-      </CardContent>
-    </Card>
-  );
-}
+const CHART_COLORS = ["#8B1A1A", "#f5a623", "#22a34a", "#b4635d", "#f4d3d1"];
 
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [period, setPeriod] = useState<"week" | "lastWeek" | "month">("week");
+  const [period] = useState<"week" | "lastWeek" | "month">("week");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "contacted" | "pending">("all");
-  const [contactDialogOpen, setContactDialogOpen] = useState(false);
-  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
-  const [staffName, setStaffName] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [detailFeedback, setDetailFeedback] = useState<Feedback | null>(null);
+  const [statusFilter] = useState<"all" | "contacted" | "pending">("all");
 
   const { data: authCheck, isLoading: authLoading } = useQuery({
     queryKey: ["/api/auth/check"],
@@ -139,20 +76,6 @@ export default function AdminDashboard() {
     enabled: !!(authCheck as any)?.authenticated,
   });
 
-  const { data: customerHistory, isLoading: historyLoading } = useQuery<CustomerHistory>({
-    queryKey: ['/api/feedback/customer-history', detailFeedback?.normalizedName],
-    queryFn: async () => {
-      if (!detailFeedback?.normalizedName) return null;
-      const res = await fetch(`/api/feedback/customer-history/${encodeURIComponent(detailFeedback.normalizedName)}`);
-      if (!res.ok) {
-        if (res.status === 404) return null;
-        throw new Error('Failed to fetch customer history');
-      }
-      return res.json();
-    },
-    enabled: !!(authCheck as any)?.authenticated && !!detailFeedback?.normalizedName && detailDialogOpen,
-  });
-
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/auth/logout");
@@ -173,46 +96,12 @@ export default function AdminDashboard() {
         description: "The customer has been marked as contacted",
       });
       refetchFeedback();
-      queryClient.invalidateQueries({ predicate: (query) => {
-        const key = query.queryKey[0] as string;
-        return key?.startsWith("/api/feedback") || key?.startsWith("/api/analytics");
-      }});
-      setContactDialogOpen(false);
-      setSelectedFeedback(null);
-      setStaffName("");
     },
   });
 
-  const handleCopyPhone = async (phone: string) => {
-    await navigator.clipboard.writeText(phone);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast({
-      title: "Phone Copied",
-      description: "Phone number copied to clipboard",
-    });
-  };
-
   const handleContactCustomer = (fb: Feedback) => {
-    setSelectedFeedback(fb);
-    setContactDialogOpen(true);
+    contactMutation.mutate({ id: fb._id as string, staffName: "Admin" });
   };
-
-  const handleViewDetails = (fb: Feedback) => {
-    setDetailFeedback(fb);
-    setDetailDialogOpen(true);
-  };
-
-  const RATING_CATEGORIES = [
-    { key: 'qualityOfService', label: 'Quality of Service' },
-    { key: 'speedOfService', label: 'Speed of Service' },
-    { key: 'friendliness', label: 'Friendliness' },
-    { key: 'foodTemperature', label: 'Food Temperature' },
-    { key: 'menuExplanation', label: 'Menu Explanation' },
-    { key: 'likelyToReturn', label: 'Likely to Return' },
-  ] as const;
-
-  const isLowRating = (rating: number) => rating <= 2;
 
   const getAverageRating = (ratings: Feedback["ratings"]) => {
     const sum = 
@@ -236,582 +125,327 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Logo className="w-10 h-10" />
-            <div>
-              <h1 className="font-bold text-lg">Bomb Rolls and Bowls</h1>
-              <p className="text-xs text-muted-foreground">Admin Dashboard</p>
-            </div>
+    <div className="flex min-h-screen bg-[#FDF8F6]">
+      <Tabs defaultValue="analytics" className="flex w-full">
+        {/* STEP 1: Left Sidebar */}
+        <aside className="w-[260px] bg-[#8B1A1A] flex flex-col fixed h-full z-50">
+          <div className="p-6">
+            <h1 className="text-white font-bold text-2xl">Admin Panel</h1>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => logoutMutation.mutate()}
-            data-testid="button-logout"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
-        </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        <Tabs defaultValue="analytics">
-          <TabsList className="mb-4">
-            <TabsTrigger value="analytics" data-testid="tab-analytics">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="feedback" data-testid="tab-feedback">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Feedback
-            </TabsTrigger>
-          </TabsList>
+          <nav className="flex-1 px-4 space-y-2 mt-4">
+            <TabsList className="flex flex-col w-full bg-transparent h-auto p-0 space-y-2">
+              <TabsTrigger
+                value="analytics"
+                className="w-full justify-start px-4 py-3 text-white data-[state=active]:bg-[#A52020] data-[state=active]:text-white hover:bg-[#A52020]/50 transition-colors border-none shadow-none"
+                data-testid="tab-analytics"
+              >
+                <BarChart3 className="w-5 h-5 mr-3" />
+                <span className="font-medium">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="feedback"
+                className="w-full justify-start px-4 py-3 text-white data-[state=active]:bg-[#A52020] data-[state=active]:text-white hover:bg-[#A52020]/50 transition-colors border-none shadow-none"
+                data-testid="tab-feedback"
+              >
+                <MessageSquare className="w-5 h-5 mr-3" />
+                <span className="font-medium">Feedback</span>
+              </TabsTrigger>
+            </TabsList>
+          </nav>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <h2 className="text-xl font-semibold">Weekly Analytics</h2>
-              <Select value={period} onValueChange={(v) => setPeriod(v as any)}>
-                <SelectTrigger className="w-40" data-testid="select-period">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="lastWeek">Last Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="p-4 mt-auto border-t border-white/10">
+            <div className="flex items-center gap-3 px-2 py-3">
+              <div className="w-10 h-10 rounded-full bg-pink-200 flex items-center justify-center text-[#8B1A1A] font-bold">
+                A
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-white font-medium truncate">admin</p>
+                <p className="text-pink-100/70 text-xs">Admin</p>
+              </div>
             </div>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-white hover:bg-white/10 mt-2 px-2"
+              onClick={() => logoutMutation.mutate()}
+              data-testid="button-logout"
+            >
+              <LogOut className="w-4 h-4 mr-3" />
+              Sign Out
+            </Button>
+          </div>
+        </aside>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <KPICard
-                title="Total Feedback"
-                value={analytics?.totalFeedback || 0}
-                icon={MessageSquare}
-                description="Responses received"
-              />
-              <KPICard
-                title="Average Rating"
-                value={`${analytics?.averageRating || 0}/5`}
-                icon={Star}
-                description="Overall satisfaction"
-              />
-              <KPICard
-                title="Top Category"
-                value={analytics?.topCategory || "-"}
-                icon={TrendingUp}
-                description="Highest rated"
-              />
-              <KPICard
-                title="Response Rate"
-                value={`${analytics?.responseRate || 0}%`}
-                icon={Phone}
-                description="Customers contacted"
-              />
-            </div>
+        {/* Main Content Area */}
+        <main className="flex-1 ml-[260px] min-h-screen">
+          <div className="p-8 max-w-7xl mx-auto space-y-8">
+            <TabsContent value="analytics" className="mt-0 space-y-8 focus-visible:outline-none">
+              {/* STEP 2: Overview Page Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold text-[#3D2B1F]">Dashboard Overview</h2>
+                  <p className="text-gray-500 mt-1">Welcome back, here's what's happening today.</p>
+                </div>
+                <Button variant="outline" className="border-[#8B1A1A] text-[#8B1A1A] hover:bg-[#8B1A1A]/5">
+                  Last 7 Days
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              {/* STEP 3: Redesigned 4 Stat Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { title: "TOTAL FEEDBACK", value: analytics?.totalFeedback || 0, icon: MessageSquare, sub: "Responses received", color: "bg-blue-50 text-blue-600" },
+                  { title: "AVERAGE RATING", value: `${analytics?.averageRating || 0}/5`, icon: Star, sub: "Overall satisfaction", color: "bg-yellow-50 text-yellow-600" },
+                  { title: "TOP CATEGORY", value: analytics?.topCategory || "-", icon: TrendingUp, sub: "Highest rated", color: "bg-green-50 text-green-600" },
+                  { title: "RESPONSE RATE", value: `${analytics?.responseRate || 0}%`, icon: Phone, sub: "Customers contacted", color: "bg-purple-50 text-purple-600" }
+                ].map((stat, i) => (
+                  <Card key={i} className="border-none shadow-sm rounded-[12px]">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <span className="text-[11px] font-bold text-gray-400 tracking-wider">{stat.title}</span>
+                        <div className={`p-2 rounded-full ${stat.color}`}>
+                          <stat.icon className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="text-3xl font-bold text-[#3D2B1F] mb-1">{stat.value}</div>
+                      <div className="text-xs text-gray-400">{stat.sub}</div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <Card className="border-none shadow-sm rounded-[12px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold text-[#3D2B1F]">Weekly Rating Trends</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[350px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={analytics?.weeklyTrends || []}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
+                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} dy={10} />
+                          <YAxis domain={[0, 5]} axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} dx={-10} />
+                          <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                          <Legend iconType="circle" />
+                          <Line type="monotone" dataKey="qualityOfService" stroke={CHART_COLORS[0]} strokeWidth={3} dot={false} />
+                          <Line type="monotone" dataKey="speedOfService" stroke={CHART_COLORS[1]} strokeWidth={3} dot={false} />
+                          <Line type="monotone" dataKey="friendliness" stroke={CHART_COLORS[2]} strokeWidth={3} dot={false} />
+                          <Line type="monotone" dataKey="foodTemperature" stroke={CHART_COLORS[3]} strokeWidth={3} dot={false} />
+                          <Line type="monotone" dataKey="menuExplanation" stroke={CHART_COLORS[4]} strokeWidth={3} dot={false} />
+                          <Line type="monotone" dataKey="likelyToReturn" stroke="#f8c216" strokeWidth={3} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* STEP 4: Redesign Category Performance Chart */}
+                <Card className="border-none shadow-sm rounded-[12px]">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold text-[#3D2B1F]">Category Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[350px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart layout="vertical" data={analytics?.categoryPerformance || []}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#F0F0F0" />
+                          <XAxis type="number" domain={[0, 5]} axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} dy={10} />
+                          <YAxis type="category" dataKey="category" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 10}} width={120} />
+                          <Tooltip 
+                            cursor={{fill: '#F9FAFB'}}
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} 
+                          />
+                          <Bar dataKey="average" radius={[0, 4, 4, 0]} barSize={30}>
+                            {(analytics?.categoryPerformance || []).map((entry: any, index: number) => {
+                              let color = "#cc2200"; // Default red
+                              if (entry.average >= 4.0) color = "#22a34a";
+                              else if (entry.average >= 3.0) color = "#f5a623";
+                              return <Cell key={`cell-${index}`} fill={color} />;
+                            })}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="border-none shadow-sm rounded-[12px]">
                 <CardHeader>
-                  <CardTitle className="text-base">Weekly Rating Trends</CardTitle>
-                  <CardDescription>Daily averages for each category</CardDescription>
+                  <CardTitle className="text-lg font-bold text-[#3D2B1F]">Feedback Volume</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-72">
+                  <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={analytics?.weeklyTrends || []}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="date" className="text-xs" />
-                        <YAxis domain={[0, 5]} className="text-xs" />
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: "Contacted", value: analytics?.feedbackVolume?.contacted || 0 },
+                            { name: "Pending", value: analytics?.feedbackVolume?.pending || 0 },
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          <Cell fill="#22a34a" />
+                          <Cell fill="#8B1A1A" />
+                        </Pie>
                         <Tooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="qualityOfService" stroke={CHART_COLORS[0]} strokeWidth={2} />
-                        <Line type="monotone" dataKey="speedOfService" stroke={CHART_COLORS[1]} strokeWidth={2} />
-                        <Line type="monotone" dataKey="friendliness" stroke={CHART_COLORS[2]} strokeWidth={2} />
-                        <Line type="monotone" dataKey="foodTemperature" stroke={CHART_COLORS[3]} strokeWidth={2} />
-                        <Line type="monotone" dataKey="menuExplanation" stroke={CHART_COLORS[4]} strokeWidth={2} />
-                        <Line type="monotone" dataKey="likelyToReturn" stroke="#f8c216" strokeWidth={2} />
-                      </LineChart>
+                      </PieChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Category Performance</CardTitle>
-                  <CardDescription>Average ratings comparison</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={analytics?.categoryPerformance || []}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="category" className="text-xs" />
-                        <YAxis domain={[0, 5]} className="text-xs" />
-                        <Tooltip />
-                        <Bar dataKey="average" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Feedback Volume</CardTitle>
-                <CardDescription>Total vs Contacted vs Pending</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: "Contacted", value: analytics?.feedbackVolume?.contacted || 0 },
-                          { name: "Pending", value: analytics?.feedbackVolume?.pending || 0 },
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label
-                      >
-                        <Cell fill={CHART_COLORS[1]} />
-                        <Cell fill={CHART_COLORS[2]} />
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+            <TabsContent value="feedback" className="mt-0 space-y-6 focus-visible:outline-none">
+              {/* STEP 5: Feedback Page Header + Date Filter Bar */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-bold text-[#3D2B1F]">Customer Feedback</h2>
+                <div className="relative w-full max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="Search name or phone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 border-none shadow-sm bg-white rounded-lg"
+                    data-testid="input-search"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="feedback" className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="relative flex-1 w-full sm:max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name or phone..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                  data-testid="input-search"
-                />
               </div>
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-                <SelectTrigger className="w-40" data-testid="select-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="contacted">Contacted</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
-            <Card>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
+              <div className="bg-white p-4 rounded-xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] font-bold text-gray-400 tracking-tighter uppercase">FILTER BY DATE:</span>
+                  <div className="flex items-center gap-2 px-3 py-1.5 border rounded-md text-sm text-gray-600 bg-gray-50/50">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="bg-[#8B1A1A] text-white hover:bg-[#8B1A1A]/90 px-4">Today</Button>
+                    <Button size="sm" variant="outline" className="border-[#8B1A1A] text-[#8B1A1A] hover:bg-[#8B1A1A]/5 px-4">Yesterday</Button>
+                  </div>
+                </div>
+                <div className="text-[#8B1A1A] font-bold text-sm">
+                  Showing feedback for: <span className="ml-1">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+              </div>
+
+              {/* STEP 6: Redesign Feedback Table */}
+              <Card className="border-none shadow-sm rounded-[12px] overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-gray-50/50">
+                    <TableRow>
+                      <TableHead className="text-[11px] font-bold text-[#3D2B1F] uppercase tracking-wider py-4">Customer</TableHead>
+                      <TableHead className="text-[11px] font-bold text-[#3D2B1F] uppercase tracking-wider py-4">Visit Info</TableHead>
+                      <TableHead className="text-[11px] font-bold text-[#3D2B1F] uppercase tracking-wider py-4">Ratings</TableHead>
+                      <TableHead className="text-[11px] font-bold text-[#3D2B1F] uppercase tracking-wider py-4">Note</TableHead>
+                      <TableHead className="text-[11px] font-bold text-[#3D2B1F] uppercase tracking-wider py-4">Date</TableHead>
+                      <TableHead className="text-[11px] font-bold text-[#3D2B1F] uppercase tracking-wider py-4">Status</TableHead>
+                      <TableHead className="text-[11px] font-bold text-[#3D2B1F] uppercase tracking-wider py-4">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredFeedback.length === 0 ? (
                       <TableRow>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Ratings</TableHead>
-                        <TableHead>Note</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableCell colSpan={7} className="text-center py-12 text-gray-400">
+                          No feedback found
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredFeedback.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                            No feedback found
+                    ) : (
+                      filteredFeedback.map((fb) => (
+                        <TableRow key={fb._id} className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors">
+                          <TableCell className="py-4">
+                            <div>
+                              <p className="font-bold text-[#3D2B1F]">{fb.name}</p>
+                              <p className="text-xs text-gray-500">{fb.phoneNumber}</p>
+                            </div>
                           </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredFeedback.map((fb) => (
-                          <TableRow key={fb._id} data-testid={`row-feedback-${fb._id}`}>
-                            <TableCell>
-                              <div className="flex items-center justify-between group">
-                                <div>
-                                  <p className="font-medium">{fb.name}</p>
-                                  <p className="text-sm text-muted-foreground">{fb.phoneNumber}</p>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-11 w-11 rounded-full text-primary no-default-hover-elevate no-default-active-elevate"
-                                  asChild
-                                  style={{ opacity: 1 }}
-                                  data-testid={`button-contact-tel-${fb._id}`}
-                                >
-                                  <a href={`tel:${fb.phoneNumber.replace(/\s+/g, '')}`}>
-                                    <Phone className="w-5 h-5" />
-                                  </a>
-                                </Button>
+                          <TableCell className="py-4">
+                            <div className="text-xs text-gray-600 space-y-0.5">
+                              <p className="font-medium text-[#3D2B1F]">{fb.location}</p>
+                              <p className="capitalize">{fb.diningOption.replace('-', ' ')}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <div className="flex flex-col gap-1">
+                              <div className="text-sm font-bold text-[#3D2B1F]">
+                                {isNaN(Number(getAverageRating(fb.ratings))) ? "N/A" : getAverageRating(fb.ratings)}
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg font-bold">{getAverageRating(fb.ratings)}</span>
-                                  <StarDisplay rating={Math.round(Number(getAverageRating(fb.ratings)))} />
+                              {!isNaN(Number(getAverageRating(fb.ratings))) && (
+                                <div className="flex gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`w-3 h-3 ${
+                                        star <= Math.round(Number(getAverageRating(fb.ratings))) ? "fill-amber-400 text-amber-400" : "text-gray-200"
+                                      }`}
+                                    />
+                                  ))}
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="max-w-48">
-                              <p className="truncate text-sm text-muted-foreground">
-                                {fb.note || "-"}
-                              </p>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {(() => {
-                                    try {
-                                      const [year, month, day] = fb.visitDate.split("-");
-                                      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                                      return `${day} ${months[parseInt(month) - 1]} ${year}`;
-                                    } catch (e) {
-                                      return fb.visitDate;
-                                    }
-                                  })()}
-                                </div>
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <span className="text-[10px] opacity-70">🕒</span>
-                                  {(() => {
-                                    try {
-                                      const [hours, minutes] = fb.visitTime.split(":");
-                                      const h = parseInt(hours);
-                                      const ampm = h >= 12 ? "PM" : "AM";
-                                      const h12 = h % 12 || 12;
-                                      return `${h12}:${minutes} ${ampm}`;
-                                    } catch (e) {
-                                      return fb.visitTime;
-                                    }
-                                  })()}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {fb.contactedAt ? (
-                                <Badge variant="secondary" className="bg-accent/20 text-accent no-default-hover-elevate no-default-active-elevate">
-                                  Contacted
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="no-default-hover-elevate no-default-active-elevate" style={{ opacity: 1 }}>
-                                  Pending
-                                </Badge>
                               )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4 max-w-[200px]">
+                            <p className="text-xs text-gray-500 line-clamp-2 italic">
+                              {fb.note ? `"${fb.note}"` : "-"}
+                            </p>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <div className="text-xs text-gray-500 whitespace-nowrap">
+                              <div className="font-medium text-[#3D2B1F] mb-0.5">{fb.visitDate}</div>
+                              <div>{fb.visitTime}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            {fb.contactedAt ? (
+                              <span className="text-xs font-bold text-green-600 uppercase tracking-tighter">Contacted</span>
+                            ) : (
+                              <span className="text-xs font-bold text-[#8B1A1A] uppercase tracking-tighter">Pending</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 border-[#8B1A1A] text-[#8B1A1A] hover:bg-[#8B1A1A]/5 px-3"
+                                onClick={() => {}}
+                                data-testid={`button-view-details-${fb._id}`}
+                              >
+                                <Eye className="w-3.5 h-3.5 mr-1.5" />
+                                View Details
+                              </Button>
+                              {!fb.contactedAt && (
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="no-default-hover-elevate no-default-active-elevate"
-                                  style={{ opacity: 1 }}
-                                  onClick={() => handleViewDetails(fb)}
-                                  data-testid={`button-view-details-${fb._id}`}
+                                  className="h-8 border-gray-200 text-gray-400 hover:bg-gray-50 px-3"
+                                  onClick={() => handleContactCustomer(fb)}
+                                  data-testid={`button-contact-mark-${fb._id}`}
                                 >
-                                  <Eye className="w-4 h-4 mr-1" />
-                                  View Details
+                                  Mark Contacted
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="no-default-hover-elevate no-default-active-elevate"
-                                  style={{ opacity: 1 }}
-                                  onClick={() => handleCopyPhone(fb.phoneNumber)}
-                                  data-testid={`button-copy-${fb._id}`}
-                                >
-                                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                </Button>
-                                {!fb.contactedAt && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="no-default-hover-elevate no-default-active-elevate"
-                                    style={{ opacity: 1 }}
-                                    onClick={() => handleContactCustomer(fb)}
-                                    data-testid={`button-contact-mark-${fb._id}`}
-                                  >
-                                    Mark Contacted
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
-
-      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Contact Customer</DialogTitle>
-            <DialogDescription>
-              Mark this customer as contacted. The phone number will be copied to your clipboard.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="p-3 rounded-lg bg-muted">
-              <p className="text-sm text-muted-foreground">Phone Number</p>
-              <p className="font-mono text-lg">{selectedFeedback?.phoneNumber}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Your Name</label>
-              <Input
-                placeholder="Enter your name"
-                value={staffName}
-                onChange={(e) => setStaffName(e.target.value)}
-                data-testid="input-staff-name"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setContactDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedFeedback && staffName) {
-                  handleCopyPhone(selectedFeedback.phoneNumber);
-                  contactMutation.mutate({ id: selectedFeedback._id, staffName });
-                }
-              }}
-              disabled={!staffName || contactMutation.isPending}
-              data-testid="button-confirm-contact"
-            >
-              {contactMutation.isPending ? "Saving..." : "Copy & Mark Contacted"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Feedback Details
-            </DialogTitle>
-            <DialogDescription>
-              Detailed view of customer feedback and rating breakdown
-            </DialogDescription>
-          </DialogHeader>
-
-          {detailFeedback && (
-            <div className="pr-2">
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">Customer Name</p>
-                    <p className="font-medium" data-testid="text-detail-name">{detailFeedback.name}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">Phone Number</p>
-                    <p className="font-mono" data-testid="text-detail-phone">{detailFeedback.phoneNumber}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">Visit Date</p>
-                    <p className="font-medium" data-testid="text-detail-visit-date">{detailFeedback.visitDate}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">Review Date</p>
-                    <p className="font-medium" data-testid="text-detail-review-date">
-                      {new Date(detailFeedback.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">Location</p>
-                    <p className="font-medium" data-testid="text-detail-location">{detailFeedback.location}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">Dining Option</p>
-                    <p className="font-medium capitalize" data-testid="text-detail-dining">{detailFeedback.diningOption}</p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <Star className="w-4 h-4 text-amber-400" />
-                    Overall Rating
-                  </h4>
-                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted">
-                    <span className="text-3xl font-bold" data-testid="text-detail-overall-rating">
-                      {getAverageRating(detailFeedback.ratings)}
-                    </span>
-                    <StarDisplay rating={Math.round(Number(getAverageRating(detailFeedback.ratings)))} />
-                    <span className="text-muted-foreground">/ 5</span>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="font-semibold mb-3">Category Ratings</h4>
-                  <div className="space-y-2">
-                    {RATING_CATEGORIES.map(({ key, label }) => {
-                      const rating = detailFeedback.ratings[key];
-                      const low = isLowRating(rating);
-                      return (
-                        <div
-                          key={key}
-                          className={`flex items-center justify-between p-3 rounded-lg ${
-                            low ? 'bg-destructive/10 border border-destructive/30' : 'bg-muted'
-                          }`}
-                          data-testid={`rating-category-${key}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {low && <AlertTriangle className="w-4 h-4 text-destructive" />}
-                            <span className={low ? 'text-destructive font-medium' : ''}>{label}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <StarDisplay rating={rating} />
-                            <span className={`font-bold ${low ? 'text-destructive' : ''}`}>
-                              {rating}/5
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {detailFeedback.note && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h4 className="font-semibold mb-3 flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4" />
-                        Customer Comment
-                      </h4>
-                      <div className="p-4 rounded-lg bg-muted">
-                        <p className="text-sm whitespace-pre-wrap" data-testid="text-detail-note">
-                          {detailFeedback.note}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <Separator />
-
-                <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <History className="w-4 h-4" />
-                    Customer History
-                    {customerHistory && customerHistory.totalVisits > 1 && (
-                      <Badge variant="secondary" className="ml-2">
-                        Repeat Customer
-                      </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
-                  </h4>
-
-                  {historyLoading ? (
-                    <div className="p-4 rounded-lg bg-muted text-center text-muted-foreground">
-                      Loading customer history...
-                    </div>
-                  ) : customerHistory ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4 p-3 rounded-lg bg-muted">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Total Visits</p>
-                          <p className="text-2xl font-bold" data-testid="text-total-visits">
-                            {customerHistory.totalVisits}
-                          </p>
-                        </div>
-                      </div>
-
-                      {customerHistory.totalVisits > 1 && (
-                        <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground">Previous Reviews (Latest First)</p>
-                          {customerHistory.feedbackHistory
-                            .filter(fb => fb._id !== detailFeedback._id)
-                            .map((fb, index) => (
-                              <Card key={fb._id} className="p-4" data-testid={`history-item-${index}`}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <Calendar className="w-3 h-3" />
-                                    {new Date(fb.createdAt).toLocaleDateString()}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold">{getAverageRating(fb.ratings)}</span>
-                                    <StarDisplay rating={Math.round(Number(getAverageRating(fb.ratings)))} />
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 text-xs mb-2">
-                                  {RATING_CATEGORIES.slice(0, 3).map(({ key, label }) => (
-                                    <div key={key} className="flex items-center gap-1">
-                                      <span className="text-muted-foreground">{label.split(' ')[0]}:</span>
-                                      <span className={isLowRating(fb.ratings[key]) ? 'text-destructive font-medium' : ''}>
-                                        {fb.ratings[key]}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                                {fb.note && (
-                                  <p className="text-sm text-muted-foreground line-clamp-2">
-                                    "{fb.note}"
-                                  </p>
-                                )}
-                              </Card>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="p-4 rounded-lg bg-muted text-center text-muted-foreground">
-                      No previous feedback history available
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
-              Close
-            </Button>
-            {detailFeedback && !detailFeedback.contactedAt && (
-              <Button
-                onClick={() => {
-                  setDetailDialogOpen(false);
-                  handleContactCustomer(detailFeedback);
-                }}
-                data-testid="button-contact-from-detail"
-              >
-                <Phone className="w-4 h-4 mr-1" />
-                Contact Customer
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                  </TableBody>
+                </Table>
+              </Card>
+            </TabsContent>
+          </div>
+        </main>
+      </Tabs>
     </div>
   );
 }

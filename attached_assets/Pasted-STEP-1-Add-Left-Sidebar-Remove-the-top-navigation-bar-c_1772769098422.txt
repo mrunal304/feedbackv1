@@ -1,0 +1,64 @@
+STEP 1 — Add Left Sidebar
+Remove the top navigation bar completely. 
+Create a left sidebar with fixed width of 260px and full height.
+Sidebar background color: #8B1A1A (dark red).
+At the top: show "Admin Panel" text in white, bold, large font.
+Below that: two nav items — "Overview" with a grid icon, and "Feedback" with a chat bubble icon. Nav item text color: white. Active nav item: slightly lighter red background like #A52020.
+At the very bottom of sidebar: show a circular avatar with letter "A", name "admin" in white, role "Admin" in light pink/faded white, and a "Sign Out" button with a logout icon.
+Do NOT change any backend or authentication logic.
+
+STEP 2 — Overview Page Header + Time Filter
+On the Overview/Analytics page, add:
+- Page title "Dashboard Overview" in dark brown bold font
+- Subtitle below it: "Welcome back, here's what's happening today." in gray
+- In the top right corner: a "Last 7 Days" button with dropdown arrow, bordered in dark red color
+Do NOT change any existing data or chart logic.
+
+STEP 3 — Redesign the 4 Stat Cards
+Redesign the 4 existing stat cards (Total Feedback, Average Rating, Top Category, Response Rate) as follows:
+- Display them in one horizontal row, equal width, with white background and soft box shadow
+- Rounded corners: 12px
+- Each card: label text on top left in gray, small colored icon on top right inside a light circle
+- Main value: large bold dark brown text in the middle
+- Subtitle below the value in small gray text
+- Keep all existing data values exactly the same
+
+STEP 4 — Redesign Category Performance Chart
+On the Overview page, in the "Category Performance" bar chart:
+- Change it from vertical bars to HORIZONTAL bars
+- Color each bar based on its average score:
+  - Score 4.0 or above → GREEN (#22a34a)
+  - Score 3.0 to 3.9 → ORANGE/YELLOW (#f5a623)
+  - Score below 3.0 → RED (#cc2200)
+- Keep all existing data and category labels exactly the same
+- White card background, rounded corners, title "Category Performance" on top left
+
+STEP 5 — Feedback Page Header + Date Filter Bar
+On the Feedback page:
+- Add page title "Customer Feedback" in large dark brown bold font at the top
+- Add a white filter bar below the title with:
+  - Label "FILTER BY DATE:" on the left in small caps gray
+  - A date input showing today's date with a calendar icon
+  - A "Today" button filled with dark red (#8B1A1A) background, white text
+  - A "Yesterday" button with transparent background, dark red border and text
+  - On the right side of the filter bar: "Showing feedback for: [date]" in bold dark red text
+- Add a search bar on the top right of the page: placeholder "Search name or phone..." with a search icon
+Do NOT change any existing filter logic or backend queries.
+
+STEP 6 — Redesign Feedback Table
+Redesign the customer feedback table:
+- White card background with rounded corners and soft shadow
+- Column headers: Customer, Visit Info, Ratings, Note, Date, Status, Actions — in small bold dark brown text
+- Each row: light bottom border, comfortable row height
+- Ratings column: show star icons (filled gold stars based on score)
+- Status column: "Pending" shown in dark red bold text, "Contacted" in green text
+- Actions column: 
+  - "View Details" button — outlined red border, red text, eye icon
+  - "Mark Contacted" button — outlined gray border, gray text
+- Rows that show NaN rating: display "N/A" instead of NaN
+- Keep all existing data, filtering, and action logic exactly the same
+
+Important — Add this line at the end of EVERY step:
+Do NOT modify any backend code, API routes, database queries, 
+authentication logic, or existing JavaScript/TypeScript functions. 
+Only update CSS styles, HTML structure, and frontend layout.
