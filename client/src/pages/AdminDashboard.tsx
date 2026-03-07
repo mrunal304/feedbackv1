@@ -14,6 +14,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 import {
   LineChart,
   Line,
@@ -98,7 +99,8 @@ export default function AdminDashboard() {
     mutationFn: async () => {
       await apiRequest("POST", "/api/auth/logout");
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/check"] });
       navigate("/login");
     },
   });

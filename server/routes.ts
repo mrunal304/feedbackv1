@@ -43,8 +43,12 @@ export async function registerRoutes(
   });
 
   app.post(api.auth.logout.path, (req, res) => {
-    req.session?.destroy(() => {});
-    res.json({ success: true });
+    req.session?.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: "Logout failed" });
+      }
+      res.json({ success: true });
+    });
   });
 
   app.get(api.auth.check.path, (req, res) => {
